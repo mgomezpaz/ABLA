@@ -1,0 +1,30 @@
+name: test_env_name
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - numpy
+  - pandas
+  - matplotlib
+  - opencv
+  - cudatoolkit=11.8
+  - jupyter
+  - h5py
+  - scikit-learn
+  - tqdm
+  - pip:
+    - torch>=2.3.1
+    - torchvision>=0.18.1
+    - antlr4-python3-runtime==4.9.3
+    - coloredlogs==15.0.1
+    - filelock
+    - fsspec
+    - hydra-core
+    - imageio
+    - iopath
+    - mrcfile
+    - onnxruntime
+    - portalocker
+    - typing-extensions
