@@ -1,5 +1,24 @@
-ABLA Installation Guide
-======================
+ABLA (Automated Bioimage Label Analyzer)
+=======================================
+
+ABLA is a powerful, GPU-accelerated tool for automated membrane segmentation in biological images. Built on Facebook's SAM2 architecture, it streamlines the analysis of complex biological structures by combining state-of-the-art AI with an intuitive interface. Perfect for researchers and labs processing large datasets, ABLA reduces analysis time from hours to minutes while maintaining high accuracy and reproducibility.
+
+![Preprocessing Example](segmentation_example_preprocessing.png)
+*Preprocessing stage: Image enhancement and noise reduction.*
+
+![Processing Example](segmentation_example_processing.png)
+*Processing stage: SAM2 model performing membrane detection and segmentation.*
+
+![Postprocessing Example](segmentation_example_postprocessing.png)
+*Postprocessing stage: Refinement of segmentation boundaries and artifact removal.*
+
+Key Features:
+- Automated membrane detection and segmentation
+- Batch processing capabilities
+- GPU acceleration for high-throughput analysis
+- User-friendly command-line interface
+- Flexible input/output formats
+- Reproducible results with configurable parameters
 
 Prerequisites
 ------------
@@ -91,7 +110,7 @@ The setup script will automatically download required checkpoints. If you need t
 
 1. Navigate to the checkpoints directory:
    ```bash
-   cd ABLA/analyzer/sam2/checkpoints
+   cd ABLA/analyzer/sam2/sam2/checkpoints
    ```
 
 2. Run the download script:
@@ -235,3 +254,59 @@ Acknowledgments
   url={https://arxiv.org/abs/2408.00714},
   year={2024}
 }
+
+Usage
+-----
+After installation, you can run ABLA using the main script:
+
+```bash
+python abla.py
+```
+
+The script will prompt you for several inputs:
+
+1. Dataset Path:
+   - Enter the path to your dataset
+   - Press Enter to use the default path from config
+
+2. Dataset Name:
+   - Enter a name for your dataset
+   - This will be used to create a results directory
+
+3. File Extension:
+   - Enter the file extension for your images
+   - Press Enter to use the default extension
+
+4. Batch Size:
+   - Enter the number of images to process simultaneously
+   - Press Enter to use the default batch size
+   - Must be a positive integer
+
+5. Segmentation Points:
+   - Enter the number of negative points
+   - Enter the number of positive points
+   - Press Enter for default values
+   - Must be positive integers
+
+Example Usage:
+```bash
+$ python abla.py
+Enter the path to your dataset (press Enter for default): /path/to/data
+Enter a name for this dataset: experiment_1
+Enter file extension (press Enter for default=.tif): 
+Enter batch size (press Enter for default=4): 8
+Enter number of negative points (press Enter for default=10): 
+Enter number of positive points (press Enter for default=10): 
+```
+
+The script will:
+1. Load and validate your dataset
+2. Initialize the membrane segmentation analyzer
+3. Process images in batches
+4. Save results in the specified directory
+5. Clean up GPU memory if CUDA was used
+
+Results will be saved in:
+```
+results/[dataset_name]/
+```
