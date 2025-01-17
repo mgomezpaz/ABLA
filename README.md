@@ -13,7 +13,7 @@ Basic Installation
 -----------------
 1. Clone the repository: 
 ```
-git clone https://github.com/yourusername/ABLA.git
+git clone https://github.com/matiasgp/ABLA.git
 cd ABLA
 ```
 2. Run the setup script:
