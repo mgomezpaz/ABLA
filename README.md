@@ -1,4 +1,4 @@
-ABLA (Automated Bioimage Label Analyzer)
+ABLA (Automated Baacterial Labeling Annotations)
 =======================================
 
 ABLA is a powerful, GPU-accelerated tool for automated membrane segmentation in biological images. Built on Facebook's SAM2 architecture, it streamlines the analysis of complex biological structures by combining state-of-the-art AI with an intuitive interface. Perfect for researchers and labs processing large datasets, ABLA reduces analysis time from hours to minutes while maintaining high accuracy and reproducibility.
