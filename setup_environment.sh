@@ -43,11 +43,14 @@ setup_environment() {
                 if ! command -v mamba &> /dev/null; then
                     echo "Mamba not found. Please install mamba first or use conda."
                     echo "You can install mamba with: conda install mamba -n base -c conda-forge"
+                    echo "Note: Mamba is recommended as it's significantly faster than conda for package installation"
                     exit 1
                 fi
                 pkg_manager="mamba"
                 break;;
             [Nn]* )
+                echo "Note: Mamba is recommended as it's significantly faster than conda for package installation"
+                echo "You can install it later with: conda install mamba -n base -c conda-forge"
                 pkg_manager="conda"
                 break;;
             * ) echo "Please answer y or n.";;
@@ -58,8 +61,22 @@ setup_environment() {
     $pkg_manager env remove -n $env_name
     
     # Create new environment from yml file
-    sed -i "1i name: $env_name" environment.yml
-    $pkg_manager env create -f environment.yml
+    # Make a temporary copy of environment.yml
+    cp environment.yml environment_temp.yml
+    # Remove any existing name field
+    sed -i '/^name:/d' environment_temp.yml
+    # Add environment name to the temporary file
+    sed -i "1i name: $env_name" environment_temp.yml
+    
+    # Create environment from temporary file with verbose output
+    echo "Creating conda environment (this may take a few minutes)..."
+    if ! timeout 600 $pkg_manager env create -f environment_temp.yml --no-deps --verbose; then
+        echo "Environment creation timed out after 10 minutes"
+        echo "Try running: conda clean -a"
+        echo "Then try the installation again"
+        rm environment_temp.yml
+        exit 1
+    fi
     
     # Activate environment
     eval "$(conda shell.bash hook)"
@@ -71,7 +88,7 @@ setup_environment() {
         mkdir -p analyzer/sam2
         git clone https://github.com/facebookresearch/sam2.git analyzer/sam2
         cd analyzer/sam2
-        pip install -e ".[notebooks]"
+        pip install -e ".[notebooks]" --no-deps
         cd ../..
     fi
     
@@ -92,6 +109,7 @@ setup_environment() {
 
 # Main execution
 echo "Setting up ABLA environment..."
+echo "Note: This installation process might take about 10 minutes. Please be patient."
 
 # Check if running in WSL for Windows users
 if grep -q Microsoft /proc/version; then

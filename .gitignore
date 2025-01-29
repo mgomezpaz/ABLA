@@ -39,3 +39,13 @@ analyzer/sam2/**
 
 # Visualization output
 repo_visualization/
+
+# Keys and sensitive files
+*.pub
+*.pem
+*.key
+
+# Allow documentation images
+!segmentation_example_preprocesed.png
+!segmentation_example_procesing.png
+!segmentation_example_postprocesing.png
