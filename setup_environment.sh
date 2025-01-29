@@ -65,6 +65,27 @@ setup_environment() {
     eval "$(conda shell.bash hook)"
     conda activate $env_name
     
+    # Install SAM2 from official repository
+    echo "Installing SAM2 from official repository..."
+    if [ ! -d "analyzer/sam2" ]; then
+        mkdir -p analyzer/sam2
+        git clone https://github.com/facebookresearch/sam2.git analyzer/sam2
+        cd analyzer/sam2
+        pip install -e ".[notebooks]"
+        cd ../..
+    fi
+    
+    # Download SAM2 checkpoints
+    echo "Downloading SAM2 checkpoints..."
+    cd analyzer/sam2/checkpoints
+    if [ ! -f "download_ckpts.sh" ]; then
+        echo "Error: download_ckpts.sh not found"
+        exit 1
+    fi
+    chmod +x download_ckpts.sh
+    ./download_ckpts.sh
+    cd ../../..
+    
     # Verify PyTorch installation
     python -c "import torch; print('PyTorch version:', torch.__version__); print('CUDA available:', torch.cuda.is_available())"
 }
