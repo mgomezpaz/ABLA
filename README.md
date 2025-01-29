@@ -35,7 +35,13 @@ Basic Installation
 git clone https://github.com/matiasgp/ABLA.git
 cd ABLA
 ```
-2. Run the setup script:
+
+2. Initialize and update submodules:
+```bash
+git submodule update --init --recursive
+```
+
+3. Run the setup script:
 ```
 chmod +x setup_environment.sh
 ./setup_environment.sh
