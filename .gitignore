@@ -7,3 +7,35 @@
 *.tiff
 *.ico
 *.webp
+
+#Ignore temporary files
+*.tmp
+*.log
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual environment
+venv/
+env/
+.env/
+
+# IDE settings
+.vscode/
+.idea/
+
+analyzer/sam2/**
+
+# Visualization output
+repo_visualization/
