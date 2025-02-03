@@ -56,5 +56,8 @@ temp_image_database/*
 # Ignore all files in the temp_image_database directory
 temp_image_database/*
 
+#ignore sam2 directory
+analyzer/sam2/
+
 #ignore all files inside sam2 directory
 analyzer/sam2/*
