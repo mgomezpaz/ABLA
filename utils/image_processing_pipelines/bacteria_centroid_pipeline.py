@@ -53,16 +53,6 @@ class BacteriaCentroidPipeline(ImagePipeline):
         # Only keep downsample buffer since that's where we need optimization
         self.downsample_buffer = None
     
-    def get_memory_usage(self):
-        """Get current memory usage of the process in GB"""
-        process = psutil.Process(os.getpid())
-        return process.memory_info().rss / 1024 / 1024 / 1024  # Convert bytes to GB
-
-    def log_memory(self, message=""):
-        """Log current memory usage with an optional message"""
-        mem_gb = self.get_memory_usage()
-        print(f"Memory usage {message}: {mem_gb:.2f} GB")
-
     def process_image(
             self,
             o_tomo,
@@ -70,18 +60,8 @@ class BacteriaCentroidPipeline(ImagePipeline):
             **kwargs
         ):
         """
-        Optimized process_image method with timing measurements and memory management.
+        Main processing pipeline for bacterial image analysis.
         """
-        def log_step(step_name, start_time):
-            """Helper to log time and memory for each step"""
-            elapsed = perf_counter() - start_time
-            self.log_memory(f"after {step_name}")
-            print(f"{step_name} took {elapsed:.2f} seconds")
-            return perf_counter()
-        
-        total_start = perf_counter()
-        self.log_memory("at start")
-        
         # Clean key by removing anything after a period
         clean_key = str(key).split('.')[0]
         temp_image_database = os.path.join("temporary_files", self.temp_image_database + "_" + clean_key)
@@ -91,22 +71,16 @@ class BacteriaCentroidPipeline(ImagePipeline):
         original_height, original_width = o_tomo.shape[1], o_tomo.shape[2]
         
         # Create a copy for JPEG generation later
-        jpeg_tomo = o_tomo.copy()  # Store a copy for JPEG generation
+        jpeg_tomo = o_tomo.copy()
         
-        # Normalize and equalize in-place when possible
-        self.log_memory("before normalization")
-        t = perf_counter()
+        # Process steps
         o_tomo = self.min_max_normalize(o_tomo)
         gc.collect()
-        t = log_step("normalization", t)
         
-        self.log_memory("before histogram equalization")
         o_tomo = self.histogram_equalization_3d(o_tomo)
         gc.collect()
-        t = log_step("histogram equalization", t)
         
         # Downsample with memory pre-allocation
-        self.log_memory("before downsampling")
         if self.downsample_buffer is None or self.downsample_buffer.shape != (
             o_tomo.shape[0] // self.downsample_factor,
             o_tomo.shape[1] // self.downsample_factor,
@@ -121,23 +95,18 @@ class BacteriaCentroidPipeline(ImagePipeline):
         tomo = self.downsample_3d_average(o_tomo, self.downsample_factor)
         del o_tomo
         gc.collect()
-        t = log_step("downsampling", t)
         
         print("Selecting the highest ranked dark group...")
         binary_mask, mask, s_axis = self.select_ranked_dark_group(
             array_3d=tomo, 
             percentile=self.dark_group_percentile
         )
-        t = log_step("dark group selection", t)
         
-        # Step 3: Find optimal slice based on entropy
         mask_entropy_slice = self.max_entropy_slice(
             array=mask, 
             num_slices=self.entropy_slices_to_average
         )
-        t = log_step("entropy slice finding", t)
         
-        # Step 4: Generate analysis points
         positive_points, negative_points = self.find_points(
             array_3d=mask, 
             slice_number=mask_entropy_slice, 
@@ -145,11 +114,10 @@ class BacteriaCentroidPipeline(ImagePipeline):
             num_positive_points=self.num_positive_points, 
             min_distance_percent=0.1
         )
-        t = log_step("point generation", t)
         
-        # Step 5: Scale points back to original resolution
         entropy_slice = self.downsample_factor * mask_entropy_slice
         print(f"Middle slice determined: {entropy_slice}")
+        
         np_positive_points = self.upscale_points(
             scaling_factor=self.downsample_factor, 
             points=positive_points
@@ -159,13 +127,10 @@ class BacteriaCentroidPipeline(ImagePipeline):
             points=negative_points
         )
         
-        # Step 6: Generate and save processed images
         print("Generating JPEG images for analysis...")
-        t = perf_counter()
         jpeg_shape = self.generate_images(jpeg_tomo, save_path=temp_image_database)
-        del jpeg_tomo  # Clean up the copy after use
+        del jpeg_tomo
         gc.collect()
-        t = log_step("JPEG generation", t)
         
         # Scale points for JPEG output
         # print("Rescaling points for JPEG images...")
@@ -229,8 +194,6 @@ class BacteriaCentroidPipeline(ImagePipeline):
         }
         
         print("Processing complete. Returning results.")
-        
-        print(f"Total processing time: {perf_counter() - total_start:.2f} seconds")
         
         return {
             "jpeg_feeding_points": jpeg_feeding_points,
