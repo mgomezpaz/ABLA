@@ -29,143 +29,96 @@ Key Features:
 
 Prerequisites
 ------------
+Note: The complete installation and environment setup process takes approximately 30 minutes.
+
 - Python >= 3.10
 - CUDA toolkit (recommended for GPU support)
 - Git
 - Wget
-- Conda or Mamba package manager
+- Conda package manager
 
-Basic Installation
------------------
+Installation
+-----------
+Important: The installation process might take about 30 minutes to complete. Please be patient.
+
 1. Clone the repository: 
-```
+```bash
 git clone https://github.com/matiasgp/ABLA.git
 cd ABLA
 ```
 
-2. Initialize and update submodules:
+2. Run the setup script:
 ```bash
-git submodule update --init --recursive
-```
-
-3. Run the setup script:
-```
 chmod +x setup_environment.sh
 ./setup_environment.sh
 ```
 
-3. Install SAM2 in the correct location:
-```bash
-# Activate your environment
-conda activate your_env_name
-
-# Create and navigate to the SAM2 directory
-mkdir -p analyzer/sam2
-cd analyzer/sam2
-
-# Clone and install SAM2
-git clone https://github.com/facebookresearch/sam2.git
-cd sam2
-pip install -e ".[notebooks]"
-```
-
-4. Download SAM2 checkpoints:
-```bash
-cd checkpoints
-./download_ckpts.sh
-cd ..
-```
-
-Alternatively, download individual checkpoints to `ABLA/analyzer/sam2/sam2/checkpoints/`:
-- sam2.1_hiera_tiny.pt
-- sam2.1_hiera_small.pt
-- sam2.1_hiera_base_plus.pt
-- sam2.1_hiera_large.pt
-
 The script will:
-- Ask for your preferred environment name
-- Ask whether to use conda or mamba
-- Set up the environment with all dependencies
-- Configure ABLA for use
+1. Check for required tools (conda, git, wget)
+2. Verify CUDA availability
+3. Ask for your preferred environment name (default: abla_env)
+4. Offer to install mamba for faster package installation (recommended)
+5. Create a new conda environment with all dependencies
+6. Install SAM2 from the official repository
+7. Download required SAM2 checkpoints
+8. Verify PyTorch installation and CUDA availability
 
 Dependencies
 -----------
-The installation will handle all required dependencies, including:
+The installation will handle all required dependencies:
+- Python 3.10
 - PyTorch >= 2.3.1
 - TorchVision >= 0.18.1
-- SAM2 (Segment Anything Model 2)
+- CUDA Toolkit 11.8
+- NumPy
+- OpenCV
+- Scikit-learn
+- Pandas
+- Matplotlib
+- SciPy
+- PSUtil
+- Hydra
+- MRCFile
+- ONNXRuntime
 - Other required Python packages
 
 GPU Support
 ----------
-For GPU support:
-- CUDA toolkit must be installed and match your PyTorch CUDA version
-- The setup script will detect CUDA availability
-- If CUDA toolkit is missing, you'll be warned but can continue installation
+- CUDA toolkit 11.8 is included in the installation
+- The setup script will automatically detect CUDA availability
+- PyTorch will be installed with CUDA support if available
 
 Windows Users
 ------------
-It's strongly recommended to use Windows Subsystem for Linux (WSL) with Ubuntu for installation.
-
-SAM2 Integration Notes
----------------------
-- SAM2 requires Python >= 3.10
-- CUDA toolkit must match your PyTorch CUDA version
-- If you see "Failed to build the SAM 2 CUDA extension" during installation:
-  - This is not critical
-  - SAM2 will still work
-  - Some post-processing functionality may be limited
-  - Core functionality remains unaffected
-
-Model Checkpoints
-----------------
-The setup script will automatically download required checkpoints. If you need to manually download or update checkpoints:
-
-1. Navigate to the checkpoints directory:
-   ```bash
-   cd ABLA/analyzer/sam2/sam2/checkpoints
-   ```
-
-2. Run the download script:
-   ```bash
-   ./download_ckpts.sh
-   ```
-
-This will download:
-- sam2.1_hiera_large.pt (SAM2 model weights)
-
-Note: Make sure you have sufficient disk space (~2GB) for the checkpoint files.
+It's recommended to use Windows Subsystem for Linux (WSL):
+1. Install WSL2 from Microsoft Store
+2. Install Ubuntu distribution
+3. Follow the Linux installation steps within WSL
 
 Troubleshooting
 --------------
-1. If mamba is selected but not found:
+1. If the environment creation times out (30 minutes):
+   ```bash
+   conda clean -a
    ```
+   Then try the installation again
+
+2. If you want to install mamba later:
+   ```bash
    conda install mamba -n base -c conda-forge
    ```
 
-2. If CUDA toolkit is missing:
-   - Install CUDA toolkit matching your PyTorch version
-   - Reinstall if needed
-
-3. For WSL users experiencing issues:
-   - Ensure WSL2 is installed
-   - Install Ubuntu from Microsoft Store
-   - Follow Linux installation steps within WSL
-
-4. If PyTorch installation fails:
-   - The script will attempt to install the CPU version
-   - You can manually install GPU version later:
-   ```
-   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+3. To verify the installation:
+   ```python
+   import torch
+   print('PyTorch version:', torch.__version__)
+   print('CUDA available:', torch.cuda.is_available())
    ```
 
-5. If you see "No module named 'sam2.sam2_video_predictor'" error:
-   - Check SAM2 installation directory structure
-   - Ensure PYTHONPATH includes SAM2 directory:
-     ```bash
-     export PYTHONPATH=$PYTHONPATH:path/to/ABLA/analyzer/sam2
-     ```
-   - Reinstall SAM2 following steps above
+4. If SAM2 installation fails:
+   - Check the analyzer/sam2 directory exists
+   - Verify git clone of SAM2 repository succeeded
+   - Check SAM2 checkpoints were downloaded correctly
 
 Verification
 -----------
@@ -203,6 +156,24 @@ For issues:
    - System information
    - CUDA version (if applicable)
    - Installation method used
+
+SAM2 Integration
+--------------
+ABLA uses Meta's Segment Anything Model 2 (SAM2) for membrane segmentation. The SAM2 model and code are from [facebookresearch/sam2](https://github.com/facebookresearch/sam2).
+
+If you use ABLA in your research, please cite both ABLA and SAM2:
+
+```bibtex
+@article{ravi2024sam2,
+  title={SAM 2: Segment Anything in Images and Videos},
+  author={Ravi, Nikhila and Gabeur, Valentin and Hu, Yuan-Ting and Hu, Ronghang and Ryali, Chaitanya and Ma, Tengyu and Khedr, Haitham and R{\"a}dle, Roman and Rolland, Chloe and Gustafson, Laura and Mintun, Eric and Pan, Junting and Alwala, Kalyan Vasudev and Carion, Nicolas and Wu, Chao-Yuan and Girshick, Ross and Doll{\'a}r, Piotr and Feichtenhofer, Christoph},
+  journal={arXiv preprint arXiv:2408.00714},
+  url={https://arxiv.org/abs/2408.00714},
+  year={2024}
+}
+```
+
+For more information about SAM2, visit their [GitHub repository](https://github.com/facebookresearch/sam2).
 
 Directory Structure
 ------------------
@@ -258,16 +229,6 @@ The following parts of the project could be enhanced or completed:
 
 If you'd like to contribute to any of these improvements, please submit a pull request or open an issue for discussion.
 
-Acknowledgments
---------------
-@article{ravi2024sam2,
-  title={SAM 2: Segment Anything in Images and Videos},
-  author={Ravi, Nikhila and Gabeur, Valentin and Hu, Yuan-Ting and Hu, Ronghang and Ryali, Chaitanya and Ma, Tengyu and Khedr, Haitham and R{\"a}dle, Roman and Rolland, Chloe and Gustafson, Laura and Mintun, Eric and Pan, Junting and Alwala, Kalyan Vasudev and Carion, Nicolas and Wu, Chao-Yuan and Girshick, Ross and Doll{\'a}r, Piotr and Feichtenhofer, Christoph},
-  journal={arXiv preprint arXiv:2408.00714},
-  url={https://arxiv.org/abs/2408.00714},
-  year={2024}
-}
-
 Usage
 -----
 After installation, you can run ABLA using the main script:
@@ -287,17 +248,18 @@ The script will prompt you for several inputs:
    - This will be used to create a results directory
 
 3. File Extension:
-   - Enter the file extension for your images
+   - Enter the file extension for your tomograms
    - Press Enter to use the default extension
 
 4. Batch Size:
-   - Enter the number of images to process simultaneously
+   - Enter the number of tomograms to process simultaneously
    - Press Enter to use the default batch size
    - Must be a positive integer
 
 5. Segmentation Points:
-   - Enter the number of negative points
-   - Enter the number of positive points
+   - Enter the number of negative points to generate
+   - Enter the number of positive points to generate
+   - (these points will be used as seeds for the segmentation model) we recommend using the default values
    - Press Enter for default values
    - Must be positive integers
 
@@ -306,10 +268,10 @@ Example Usage:
 $ python abla.py
 Enter the path to your dataset (press Enter for default): /path/to/data
 Enter a name for this dataset: experiment_1
-Enter file extension (press Enter for default=.tif): 
-Enter batch size (press Enter for default=4): 8
-Enter number of negative points (press Enter for default=10): 
-Enter number of positive points (press Enter for default=10): 
+Enter file extension (press Enter for default=.rec): 
+Enter batch size (press Enter for default=1): 8
+Enter number of negative points (press Enter for default=2): 
+Enter number of positive points (press Enter for default=3): 
 ```
 
 The script will:
