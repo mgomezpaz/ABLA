@@ -10,6 +10,9 @@ from scipy.ndimage import center_of_mass, distance_transform_edt, label
 from scipy.stats import entropy
 from scipy.spatial.distance import cdist
 from sklearn.cluster import KMeans
+from time import perf_counter  # More precise than time.time()
+import psutil
+import gc  # Added for garbage collection
 
 
 class BacteriaCentroidPipeline(ImagePipeline):
@@ -47,7 +50,19 @@ class BacteriaCentroidPipeline(ImagePipeline):
         self.num_positive_points = num_positive_points
         self.num_negative_points = num_negative_points
         self.temp_image_database = temp_image_database
+        # Only keep downsample buffer since that's where we need optimization
+        self.downsample_buffer = None
     
+    def get_memory_usage(self):
+        """Get current memory usage of the process in GB"""
+        process = psutil.Process(os.getpid())
+        return process.memory_info().rss / 1024 / 1024 / 1024  # Convert bytes to GB
+
+    def log_memory(self, message=""):
+        """Log current memory usage with an optional message"""
+        mem_gb = self.get_memory_usage()
+        print(f"Memory usage {message}: {mem_gb:.2f} GB")
+
     def process_image(
             self,
             o_tomo,
@@ -55,58 +70,74 @@ class BacteriaCentroidPipeline(ImagePipeline):
             **kwargs
         ):
         """
-        Main processing pipeline for bacterial image analysis.
-        
-        Processing Steps:
-        1. Normalize and equalize the tomogram for consistent intensity
-        2. Downsample data and identify dark connecting groups
-        3. Find slice with highest entropy for optimal analysis
-        4. Generate positive points (bacterial regions) and negative points (background)
-        5. Scale coordinates for different resolution outputs
-        6. Generate and save processed images
-        7. Calculate entropy boundaries for sequence analysis
-        
-        Args:
-            o_tomo: Original 3D tomogram data
-            key: Unique identifier for this processing run
-            **kwargs: Additional processing parameters
-            
-        Returns:
-            dict: Contains processed points, file paths, and boundary values:
-                - jpeg_feeding_points: Points scaled for JPEG output
-                - np_feeding_points: Points in numpy array coordinates
-                - stopper_points: Sequence boundary values
-                - temp_bacteria_path: Path to temporary processed images
+        Optimized process_image method with timing measurements and memory management.
         """
+        def log_step(step_name, start_time):
+            """Helper to log time and memory for each step"""
+            elapsed = perf_counter() - start_time
+            self.log_memory(f"after {step_name}")
+            print(f"{step_name} took {elapsed:.2f} seconds")
+            return perf_counter()
+        
+        total_start = perf_counter()
+        self.log_memory("at start")
+        
         # Clean key by removing anything after a period
         clean_key = str(key).split('.')[0]
         temp_image_database = os.path.join("temporary_files", self.temp_image_database + "_" + clean_key)
-        # print(f"Processing image with key: {key}")
+        print(f"Input tomogram shape: {o_tomo.shape}")
         
-        # Step 1: Normalize and equalize for consistent intensity range
-        # print("Normalizing and equalizing the tomogram...")
-        o_tomo = self.min_max_normalize(o_tomo) 
+        # Store original dimensions before any processing
+        original_height, original_width = o_tomo.shape[1], o_tomo.shape[2]
+        
+        # Create a copy for JPEG generation later
+        jpeg_tomo = o_tomo.copy()  # Store a copy for JPEG generation
+        
+        # Normalize and equalize in-place when possible
+        self.log_memory("before normalization")
+        t = perf_counter()
+        o_tomo = self.min_max_normalize(o_tomo)
+        gc.collect()
+        t = log_step("normalization", t)
+        
+        self.log_memory("before histogram equalization")
         o_tomo = self.histogram_equalization_3d(o_tomo)
+        gc.collect()
+        t = log_step("histogram equalization", t)
         
-        # Step 2: Reduce data size and identify dark regions
-        # print("Downsampling the tomogram...")
+        # Downsample with memory pre-allocation
+        self.log_memory("before downsampling")
+        if self.downsample_buffer is None or self.downsample_buffer.shape != (
+            o_tomo.shape[0] // self.downsample_factor,
+            o_tomo.shape[1] // self.downsample_factor,
+            o_tomo.shape[2] // self.downsample_factor
+        ):
+            self.downsample_buffer = np.empty((
+                o_tomo.shape[0] // self.downsample_factor,
+                o_tomo.shape[1] // self.downsample_factor,
+                o_tomo.shape[2] // self.downsample_factor
+            ), dtype=np.float32)
+        
         tomo = self.downsample_3d_average(o_tomo, self.downsample_factor)
+        del o_tomo
+        gc.collect()
+        t = log_step("downsampling", t)
+        
         print("Selecting the highest ranked dark group...")
         binary_mask, mask, s_axis = self.select_ranked_dark_group(
             array_3d=tomo, 
             percentile=self.dark_group_percentile
         )
-
+        t = log_step("dark group selection", t)
+        
         # Step 3: Find optimal slice based on entropy
-        # print("Finding the slice with the highest entropy...")
         mask_entropy_slice = self.max_entropy_slice(
             array=mask, 
             num_slices=self.entropy_slices_to_average
         )
-        print(f"Entropy mask slice determined: {mask_entropy_slice}")
+        t = log_step("entropy slice finding", t)
         
         # Step 4: Generate analysis points
-        # print("Finding positive and negative points...")
         positive_points, negative_points = self.find_points(
             array_3d=mask, 
             slice_number=mask_entropy_slice, 
@@ -114,11 +145,11 @@ class BacteriaCentroidPipeline(ImagePipeline):
             num_positive_points=self.num_positive_points, 
             min_distance_percent=0.1
         )
-        # print(f"Positive points found: {positive_points}")
-        # print(f"Negative points found: {negative_points}")
+        t = log_step("point generation", t)
         
         # Step 5: Scale points back to original resolution
         entropy_slice = self.downsample_factor * mask_entropy_slice
+        print(f"Middle slice determined: {entropy_slice}")
         np_positive_points = self.upscale_points(
             scaling_factor=self.downsample_factor, 
             points=positive_points
@@ -130,10 +161,12 @@ class BacteriaCentroidPipeline(ImagePipeline):
         
         # Step 6: Generate and save processed images
         print("Generating JPEG images for analysis...")
-        jpeg_shape = self.generate_images(o_tomo, save_path=temp_image_database)
-        original_height, original_width = o_tomo.shape[1], o_tomo.shape[2]
-        # print("Frame:", entropy_slice)
-
+        t = perf_counter()
+        jpeg_shape = self.generate_images(jpeg_tomo, save_path=temp_image_database)
+        del jpeg_tomo  # Clean up the copy after use
+        gc.collect()
+        t = log_step("JPEG generation", t)
+        
         # Scale points for JPEG output
         # print("Rescaling points for JPEG images...")
         jpeg_positive_points = self.rescale_coordinates(
@@ -197,6 +230,8 @@ class BacteriaCentroidPipeline(ImagePipeline):
         
         print("Processing complete. Returning results.")
         
+        print(f"Total processing time: {perf_counter() - total_start:.2f} seconds")
+        
         return {
             "jpeg_feeding_points": jpeg_feeding_points,
             "np_feeding_points": np_feeding_points,
@@ -206,37 +241,29 @@ class BacteriaCentroidPipeline(ImagePipeline):
     
     def downsample_3d_average(self, image_3d, factor):
         """
-        Downsamples a 3D image by averaging non-overlapping blocks using vectorized operations.
-        This reduces memory usage while preserving important features through averaging.
-
-        Args:
-            image_3d: 3D numpy array to downsample
-            factor: Integer reduction factor (e.g., factor=8 reduces size by 1/8th)
-
-        Returns:
-            numpy.ndarray: Downsampled 3D array
+        Optimized downsampling using strided operations and pre-allocated buffer.
         """
-        # Calculate new dimensions ensuring clean division by factor
+        if factor == 1:
+            return image_3d
+        
+        # Calculate new dimensions
         new_shape = (
             image_3d.shape[0] // factor,
+            factor,
             image_3d.shape[1] // factor,
-            image_3d.shape[2] // factor
+            factor,
+            image_3d.shape[2] // factor,
+            factor
         )
         
-        # Reshape array to create blocks for averaging
-        # This creates a view of the array grouped into factor-sized chunks
-        reshaped = image_3d[:new_shape[0] * factor, 
-                           :new_shape[1] * factor, 
-                           :new_shape[2] * factor].reshape(
-            new_shape[0], factor,
-            new_shape[1], factor,
-            new_shape[2], factor
-        )
+        # Use pre-allocated buffer for result
+        np.mean(image_3d[:new_shape[0] * factor,
+                         :new_shape[2] * factor,
+                         :new_shape[4] * factor].reshape(new_shape),
+                axis=(1, 3, 5),
+                out=self.downsample_buffer)
         
-        # Average along factor dimensions to create downsampled array
-        downsampled = reshaped.mean(axis=(1, 3, 5))
-        
-        return downsampled
+        return self.downsample_buffer
     
     def select_ranked_dark_group(self, array_3d, percentile=5, rank=1, connectivity=2):
         """
@@ -826,27 +853,25 @@ class BacteriaCentroidPipeline(ImagePipeline):
 
     def histogram_equalization_3d(self, image):
         """
-        Applies histogram equalization to 3D array to enhance contrast.
-        Uses cumulative distribution function for intensity mapping.
-
-        Args:
-            image: 3D numpy array
-
-        Returns:
-            numpy.ndarray: Contrast-enhanced array through histogram equalization
+        Optimized histogram equalization using vectorized operations and memory efficiency.
         """
-        # Calculate histogram with 256 bins
-        hist, bins = np.histogram(image.flatten(), bins=256, range=[0, 1])
-
-        # Calculate cumulative distribution function (CDF)
-        cdf = hist.cumsum()
-        # Normalize CDF to [0,1] range
-        cdf_normalized = cdf / cdf.max()
-
-        # Apply equalization through linear interpolation
-        image_equalized = np.interp(image.flatten(), bins[:-1], cdf_normalized)
+        # Pre-allocate output array to avoid memory fragmentation
+        output = np.empty_like(image)
         
-        return image_equalized.reshape(image.shape)
+        # Calculate histogram with fewer bins for speed
+        hist, bins = np.histogram(image, bins=128, range=[0, 1])
+        
+        # Calculate CDF using cumsum
+        cdf = hist.cumsum()
+        cdf_normalized = (cdf - cdf.min()) / (cdf.max() - cdf.min())
+        
+        # Use numpy's digitize for faster bin lookup
+        bin_indices = np.digitize(image.ravel(), bins[:-1])
+        
+        # Map values using pre-computed CDF
+        output.ravel()[:] = cdf_normalized[bin_indices-1]
+        
+        return output
     
     def save_specific_slice_centroid(self, array, slice_number, num_slices=10, 
                                    custom_name=None, save_path=None, 
@@ -933,8 +958,4 @@ class BacteriaCentroidPipeline(ImagePipeline):
             print(f"Saved visualization to {image_filename}")
         
         plt.close(fig)
-        
-        
-        
-        
         

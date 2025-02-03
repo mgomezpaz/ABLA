@@ -53,6 +53,12 @@ class MembraneSegmenter(Analysis):
         self.device = device
         self.results_dir = results_dir
         
+        # Add preloading of model
+        if GlobalHydra().is_initialized():
+            GlobalHydra.instance().clear()
+        initialize(version_base=None, config_path="sam2/sam2")
+        self.predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint, device=device)
+        
     def analyze(
             self,
             data_path,
@@ -94,6 +100,10 @@ class MembraneSegmenter(Analysis):
         # Initialize device
         if torch.cuda.is_available():
             device = torch.device("cuda")
+            torch.autocast("cuda", dtype=torch.bfloat16).__enter__()
+            if torch.cuda.get_device_properties(0).major >= 8:
+                torch.backends.cuda.matmul.allow_tf32 = True
+                torch.backends.cudnn.allow_tf32 = True
         elif torch.backends.mps.is_available():
             device = torch.device("mps")
         else:
@@ -402,4 +412,3 @@ def show_mask(mask, ax, obj_id=None):
 def create_video(output_dir, fps=30):
     """Video creation utility function"""
     # ... implementation ...
-

@@ -36,26 +36,31 @@ setup_environment() {
     env_name=${env_name:-$default_name}
     
     # Ask for package manager preference
-    while true; do
-        read -p "Use mamba instead of conda? (y/n): " use_mamba
-        case $use_mamba in
+    if ! command -v mamba &> /dev/null; then
+        echo "Mamba is not installed but highly recommended for faster installation."
+        echo "Would you like to install mamba first? This will speed up the installation significantly."
+        read -p "Install mamba? (y/n): " install_mamba
+        case $install_mamba in
             [Yy]* )
-                if ! command -v mamba &> /dev/null; then
-                    echo "Mamba not found. Please install mamba first or use conda."
-                    echo "You can install mamba with: conda install mamba -n base -c conda-forge"
-                    echo "Note: Mamba is recommended as it's significantly faster than conda for package installation"
-                    exit 1
-                fi
+                echo "Installing mamba..."
+                conda install mamba -n base -c conda-forge -y
                 pkg_manager="mamba"
-                break;;
+                ;;
             [Nn]* )
-                echo "Note: Mamba is recommended as it's significantly faster than conda for package installation"
-                echo "You can install it later with: conda install mamba -n base -c conda-forge"
+                echo "Continuing with conda (slower). You can install mamba later with:"
+                echo "conda install mamba -n base -c conda-forge"
                 pkg_manager="conda"
-                break;;
-            * ) echo "Please answer y or n.";;
+                ;;
+            * )
+                echo "Invalid response. Continuing with conda."
+                pkg_manager="conda"
+                ;;
         esac
-    done
+    else
+        # Mamba is installed, recommend using it
+        echo "Mamba is installed (recommended for faster installation)."
+        pkg_manager="mamba"
+    fi
     
     # Remove existing environment if it exists
     $pkg_manager env remove -n $env_name
@@ -70,12 +75,24 @@ setup_environment() {
     
     # Create environment from temporary file with verbose output
     echo "Creating conda environment (this may take a few minutes)..."
-    if ! timeout 600 $pkg_manager env create -f environment_temp.yml --no-deps --verbose; then
-        echo "Environment creation timed out after 10 minutes"
-        echo "Try running: conda clean -a"
-        echo "Then try the installation again"
-        rm environment_temp.yml
-        exit 1
+    if [ "$pkg_manager" = "mamba" ]; then
+        # For mamba, remove the --no-deps flag
+        if ! timeout 1800 mamba env create -f environment_temp.yml --verbose; then
+            echo "Environment creation timed out after 30 minutes"
+            echo "Try running: conda clean -a"
+            echo "Then try the installation again"
+            rm environment_temp.yml
+            exit 1
+        fi
+    else
+        # For conda, keep the --no-deps flag
+        if ! timeout 1800 conda env create -f environment_temp.yml --no-deps --verbose; then
+            echo "Environment creation timed out after 30 minutes"
+            echo "Try running: conda clean -a"
+            echo "Then try the installation again"
+            rm environment_temp.yml
+            exit 1
+        fi
     fi
     
     # Activate environment
@@ -109,7 +126,7 @@ setup_environment() {
 
 # Main execution
 echo "Setting up ABLA environment..."
-echo "Note: This installation process might take about 10 minutes. Please be patient."
+echo "Note: This installation process might take about 30 minutes. Please be patient."
 
 # Check if running in WSL for Windows users
 if grep -q Microsoft /proc/version; then

@@ -1,8 +1,11 @@
-# Import required modules and classes
+# Core functionality
+from typing import Dict, Any
+from tqdm import tqdm  # For progress bar
+
+# Local imports
 from analyzer import Analysis
 from .thread_manager import ThreadManager
-from dataset import Dataset
-import tqdm
+from dataset.dataset_base import Dataset  # Be explicit about the import path
 
 class DataFactory:
     """
@@ -47,7 +50,7 @@ class DataFactory:
         batch_num = 4
 
         # Create progress bar for visual feedback
-        loading_bar = tqdm.tqdm(total=len(dataset), desc=loading_bar_string)
+        loading_bar = tqdm(total=len(dataset), desc=loading_bar_string)
         
         # Dictionary to store combined results from all batches
         all_results = {}

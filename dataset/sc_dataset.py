@@ -1,7 +1,11 @@
-# Imports required modules
-from .dataset_base import Dataset
+# Core functionality
+from typing import Dict, Any, List
 import os
+from glob import glob
 import random
+
+# Local imports
+from .dataset_base import Dataset  # Changed from dataset to dataset_base
 
 class SCDataset(Dataset):
     """A dataset class specifically for handling .rec files"""

@@ -1,26 +1,47 @@
 # ===============================
 # IMPORT LIBRARIES
 # ===============================
+
+import numpy as np
+# Basic utilities (fast imports)
+import os
+import sys
+import shutil
+import glob
 from pprint import pprint
-import numpy as np              # For numerical operations and array handling
-import pandas as pd            # For data manipulation and analysis
-import matplotlib.pyplot as plt # For plotting and visualization
-# import seaborn as sns        # Statistical data visualization (currently commented out)
-import os                      # For operating system related operations
-import torch                   # For deep learning operations
-import sys                     # For system operations
+import torch
 
 # ===============================
 # IMPORT CUSTOM MODULES
 # ===============================
-from config import *           # Import all configuration settings
+from config import *
+from analyzer.membrane_segmenter import MembraneSegmenter
+from managment_layer.data_factory import DataFactory
+from dataset.sc_dataset import SCDataset
+from utils.image_processing_pipelines import BacteriaCentroidPipeline
 
-# Import custom analysis modules
-from analyzer.membrane_segmenter import MembraneSegmenter    # For membrane segmentation analysis
-from managment_layer.data_factory import DataFactory         # For data processing and management
-from dataset import Dataset                                  # Base dataset class
-from dataset.sc_dataset import SCDataset                     # Specific dataset class for this application
-from utils.image_processing_pipelines import BacteriaCentroidPipeline  # Image processing pipeline for bacteria detection
+# Remove unused imports
+# import pandas as pd            # Not used
+# import matplotlib.pyplot as plt # Not used
+# import seaborn as sns         # Not used
+
+def cleanup_temp_files(dataset_name):
+    """
+    Clean up temporary files and directories created during processing.
+    
+    Args:
+        dataset_name (str): Name of the dataset used in processing
+    """
+    try:
+        # Clean up temporary image databases
+        temp_pattern = f"temporary_files/temp_image_database_{dataset_name}*"
+        temp_dirs = glob.glob(temp_pattern)
+        for temp_dir in temp_dirs:
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
+                print(f"Cleaned up temporary directory: {temp_dir}")
+    except Exception as e:
+        print(f"Warning: Error during cleanup: {e}")
 
 def main():
     """
@@ -170,6 +191,10 @@ def main():
     # ===============================
     # PROGRAM TERMINATION
     # ===============================
+    # Add cleanup after processing is complete
+    print("\nCleaning up temporary files...")
+    cleanup_temp_files(dataset_name)
+    
     print("\nProgram completed successfully.")
     try:
         # Clean up any GPU memory if CUDA was used
