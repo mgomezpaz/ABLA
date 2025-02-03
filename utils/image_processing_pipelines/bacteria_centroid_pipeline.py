@@ -10,8 +10,6 @@ from scipy.ndimage import center_of_mass, distance_transform_edt, label
 from scipy.stats import entropy
 from scipy.spatial.distance import cdist
 from sklearn.cluster import KMeans
-from time import perf_counter  # More precise than time.time()
-import psutil
 import gc  # Added for garbage collection
 
 

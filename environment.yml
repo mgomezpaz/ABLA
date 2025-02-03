@@ -22,3 +22,10 @@ dependencies:
     - mrcfile
     - onnxruntime
     - imageio
+    - iopath
+    - timm
+    - fairscale
+    - fvcore
+    - submitit
+    - black
+    - termcolor
