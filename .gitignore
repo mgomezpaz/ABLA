@@ -49,3 +49,12 @@ repo_visualization/
 !segmentation_example_preprocesed.png
 !segmentation_example_procesing.png
 !segmentation_example_postprocesing.png
+
+# Ignore all files in the temp_image_database directory
+temp_image_database/*
+
+# Ignore all files in the temp_image_database directory
+temp_image_database/*
+
+#ignore all files inside sam2 directory
+analyzer/sam2/*
