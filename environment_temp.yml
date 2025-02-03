@@ -1,4 +1,4 @@
-name: test_env_name
+name: tes
 channels:
   - conda-forge
   - defaults
@@ -10,13 +10,9 @@ dependencies:
   - cudatoolkit=11.8
   - scikit-learn
   - tqdm
-  - imageio
-  - pandas
-  - matplotlib
   - pip:
     - torch>=2.3.1
     - torchvision>=0.18.1
     - hydra-core
     - mrcfile
     - onnxruntime
-    - imageio

@@ -1,6 +1,8 @@
 from .basic import Basic
 from .analysis_base import Analysis
 from .membrane_segmenter import MembraneSegmenter
+from abc import ABC, abstractmethod
+from typing import Dict, Any
 
 def get_analysis(analysis_type):
     """
