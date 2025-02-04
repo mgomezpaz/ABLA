@@ -105,7 +105,7 @@ setup_environment() {
         mkdir -p analyzer/sam2
         git clone https://github.com/facebookresearch/sam2.git analyzer/sam2
         cd analyzer/sam2
-        pip install -e ".[notebooks]" --no-deps
+        pip install -e .
         cd ../..
     fi
     

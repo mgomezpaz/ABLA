@@ -63,6 +63,15 @@ The script will:
 7. Download required SAM2 checkpoints
 8. Verify PyTorch installation and CUDA availability
 
+After installation, install SAM2:
+```bash
+# Activate your environment
+conda activate your_env_name
+
+# Install SAM2
+pip install sam2
+```
+
 Dependencies
 -----------
 The installation will handle all required dependencies:
@@ -280,6 +289,12 @@ The script will:
 3. Process images in batches
 4. Save results in the specified directory
 5. Clean up GPU memory if CUDA was used
+
+Processing Times:
+- First tomogram takes longer due to model initialization and CUDA setup
+- Average processing time per tomogram: ~1 minute 15 seconds
+- Tested on NVIDIA GeForce RTX 3090 GPU
+- Performance may vary depending on your hardware configuration
 
 Results will be saved in:
 ```
