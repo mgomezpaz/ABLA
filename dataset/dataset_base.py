@@ -19,18 +19,25 @@ class Dataset(ABC):
         
         for path in data_folder_path:
             try:
-                # Run the lfs find command to locate .rec files
-                result = subprocess.run(["lfs", "find", path, "-type", "f", "--name", "*.rec"],
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
-                                        text=True,
-                                        check=True) 
-                # Process the output of the command
+                # Try lfs first, fall back to regular find if lfs isn't available
+                try:
+                    result = subprocess.run(["lfs", "find", path, "-type", "f", "--name", "*.rec"],
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.PIPE,
+                                          text=True,
+                                          check=True)
+                except FileNotFoundError:
+                    result = subprocess.run(["find", path, "-type", "f", "-name", "*.rec"],
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.PIPE,
+                                          text=True,
+                                          check=True)
+                
+                # Process the output
                 for name in result.stdout.splitlines():
                     if file_count >= self.max_files:
                         break
-
-                    # Check if path contains 'peet' or 'align' (case insensitive)
+                    
                     components = name.split('/')
                     found_peet = False
                     for component in components:
@@ -38,13 +45,32 @@ class Dataset(ABC):
                             found_peet = True
                             break
                     
-                    # Add path if it doesn't contain excluded terms
                     if not found_peet:
                         self.fpaths.append(name)
                         file_count += 1
 
             except subprocess.CalledProcessError as e:
-                print(f"An error occurred while running the subprocess: {e}")
+                print(f"An error occurred while running the find command: {e}")
+                print("Falling back to Python's os.walk...")
+                
+                # Fallback to os.walk if both find commands fail
+                for root, _, files in os.walk(path):
+                    for file in files:
+                        if file_count >= self.max_files:
+                            break
+                            
+                        if file.endswith('.rec'):
+                            full_path = os.path.join(root, file)
+                            components = full_path.split(os.sep)
+                            found_peet = False
+                            for component in components:
+                                if 'peet' in component.lower() or "align" in component.lower():
+                                    found_peet = True
+                                    break
+                            
+                            if not found_peet:
+                                self.fpaths.append(full_path)
+                                file_count += 1
     
     @abstractmethod
     def __len__(self):
