@@ -22,8 +22,8 @@ MODEL_PATHS = {
     'sam2_checkpoint': "/home/matiasgp/Desktop/ABLA/analyzer/sam2/checkpoints/sam2.1_hiera_large.pt",
     'model_config': "configs/sam2.1/sam2.1_hiera_l.yaml",
     # FOR FINE-TUNED MODEL
-    # 'sam2_checkpoint_ft': "/home/matiasgp/Desktop/ABLA/analyzer/sam2/checkpoints/bacteria2.pt",
-    # 'model_config_ft': "configs/sam2.1/sam2.1_hiera_b+.yaml"
+    #'sam2_checkpoint': "/home/matiasgp/Desktop/ABLA/analyzer/sam2/checkpoints/bacteria2.pt",
+    #'model_config': "configs/sam2.1/sam2.1_hiera_b+.yaml"
 }
 
 # Results Settings

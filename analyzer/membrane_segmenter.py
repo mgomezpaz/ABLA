@@ -203,13 +203,16 @@ class MembraneSegmenter(Analysis):
             dict: Frame-wise segmentation masks with structure:
                 {frame_idx: {obj_id: binary_mask_array}}
         """
+        # Get the absolute path to the ABLA root directory
+        abla_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         
-        # Change to the ABLA root directory
+        # Store original directory
         original_dir = os.getcwd()
-        os.chdir("/home/matiasgp/Desktop/ABLA")
         
         try:
-
+            # Change to the ABLA root directory using the dynamic path
+            os.chdir(abla_root)
+            
             # Clear any existing Hydra initialization
             if GlobalHydra().is_initialized():
                 GlobalHydra.instance().clear()
