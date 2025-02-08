@@ -8,7 +8,7 @@ import random
 from .dataset_base import Dataset  # Changed from dataset to dataset_base
 
 class SCDataset(Dataset):
-    """A dataset class specifically for handling .rec files"""
+    """A dataset class specifically for handling .rec and .mrc files"""
     
     def __init__(self, data_folder_paths: list, file_ext: str = '.rec', max_files: int = None):
         """
@@ -19,22 +19,34 @@ class SCDataset(Dataset):
             max_files (int, optional): Maximum number of files to process
         """
         super().__init__(data_folder_paths, max_files)
-        self.file_ext = file_ext
+        # Support both .rec and .mrc files
+        self.file_ext = file_ext.lower()  # Normalize extension
+        self.data_paths = []
         
-        # If we're given a direct file path instead of a directory
-        if len(data_folder_paths) == 1 and os.path.isfile(data_folder_paths[0]):
-            self.fpaths = data_folder_paths
-        # Add this else block to handle directory paths
+        # Handle both single files and directories
+        for path in data_folder_paths:
+            if os.path.isfile(path):
+                # For direct file paths, check extension
+                if path.lower().endswith(self.file_ext):
+                    self.data_paths.append(path)
+            else:
+                # For directories, walk through all subdirectories
+                for root, _, files in os.walk(path):
+                    for file in files:
+                        # Check for both .rec and .mrc files (case insensitive)
+                        if file.lower().endswith(self.file_ext):
+                            full_path = os.path.join(root, file)
+                            self.data_paths.append(full_path)
+        
+        # Sort paths for consistent ordering
+        self.data_paths.sort()
+        
+        if not self.data_paths:
+            print(f"Warning: No files with extension {self.file_ext} found in the specified paths.")
+            print("Searched in:", data_folder_paths)
         else:
-            self.fpaths = []
-            for folder_path in data_folder_paths:
-                if os.path.isdir(folder_path):
-                    # Walk through the directory and collect all files
-                    for root, _, files in os.walk(folder_path):
-                        for file in files:
-                            if file.endswith(self.file_ext):
-                                self.fpaths.append(os.path.join(root, file))
-        
+            print(f"Found {len(self.data_paths)} files with extension {self.file_ext}")
+            
         self.file_paths = self._get_file_paths()
 
     def _get_file_paths(self):
@@ -44,7 +56,7 @@ class SCDataset(Dataset):
             dict: Dictionary mapping filenames to their full paths
         """
         file_paths = {}
-        for path in self.fpaths:
+        for path in self.data_paths:
             if path.endswith(self.file_ext):
                 file_name = os.path.basename(path)
                 file_paths[file_name] = path
@@ -104,3 +116,6 @@ class SCDataset(Dataset):
         key = random.choice(list(self.file_paths.keys()))
         path = self.file_paths.pop(key)
         return {key: path}
+
+    def __getitem__(self, idx):
+        return {os.path.basename(self.data_paths[idx]): self.data_paths[idx]}

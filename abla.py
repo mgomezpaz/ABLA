@@ -48,7 +48,11 @@ def main():
     Main function to run the bacterial membrane segmentation analysis pipeline.
     Handles data loading, processing, and result generation.
     """
-        
+    # Create necessary directories if they don't exist
+    os.makedirs(os.path.join(ABLA_ROOT, "data"), exist_ok=True)
+    os.makedirs(os.path.join(ABLA_ROOT, "results"), exist_ok=True)
+    os.makedirs(os.path.join(ABLA_ROOT, "temporary_files"), exist_ok=True)
+    
     # ===============================
     # INPUT DATA PATHS
     # ===============================

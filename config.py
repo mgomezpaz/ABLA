@@ -1,6 +1,10 @@
 # ===============================
 # CONFIGURATION SETTINGS
 # ===============================
+import os
+
+# Get ABLA root directory
+ABLA_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 # Model Settings
 MODEL_SETTINGS = {
@@ -13,20 +17,21 @@ MODEL_SETTINGS = {
 # File Settings
 FILE_SETTINGS = {
     'default_file_extension': '.rec',
-    'default_dataset_path': "/home/matiasgp/groups/grp_tomo_db1_d1/nobackup/archive/TomoDB1_d1/FlagellarMotor_P1/CaulobacterCrescentus_UnpluggedPL/lza2018-10-20-13/targ65_full.rec"
+    # Use environment variable or fallback to a default path
+    'default_dataset_path': os.getenv('ABLA_DATASET_PATH', '/path/to/your/data/example.rec')
 }
 
 # Model Paths
 MODEL_PATHS = {
     # FOR DEFAULT MODEL
-    'sam2_checkpoint': "/home/matiasgp/Desktop/ABLA/analyzer/sam2/checkpoints/sam2.1_hiera_large.pt",
+    'sam2_checkpoint': os.path.join(ABLA_ROOT, "analyzer/sam2/checkpoints/sam2.1_hiera_large.pt"),
     'model_config': "configs/sam2.1/sam2.1_hiera_l.yaml",
     # FOR FINE-TUNED MODEL
-    #'sam2_checkpoint': "/home/matiasgp/Desktop/ABLA/analyzer/sam2/checkpoints/bacteria2.pt",
+    #'sam2_checkpoint': os.path.join(ABLA_ROOT, "analyzer/sam2/checkpoints/bacteria2.pt"),
     #'model_config': "configs/sam2.1/sam2.1_hiera_b+.yaml"
 }
 
 # Results Settings
 RESULTS_SETTINGS = {
-    'results_dir': "/home/matiasgp/Desktop/data/annotations/",
+    'results_dir': os.getenv('ABLA_RESULTS_DIR', os.path.join(ABLA_ROOT, "results")),
 }
