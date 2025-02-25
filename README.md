@@ -1,3 +1,21 @@
+# Abstract
+
+ABLA (Automated Bacterial Labeling Annotations) is a cutting-edge tool designed to revolutionize particle identification in cryo-electron tomography (cryo-ET). By leveraging advanced AI techniques and precise membrane segmentation, ABLA addresses the fundamental challenges of low signal-to-noise ratios and extensive search volumes in bacterial analysis.
+
+**Key Innovations:**
+- Intelligent search space constraint through SAM2-powered membrane segmentation
+- Integration of entropy-based slice selection
+- Automated centroid detection for precise 3D mask generation
+- Reduction of search volume by up to 75% while maintaining accuracy
+
+**Impact:**
+- Transforms hours of manual analysis into minutes of automated processing
+- Maintains high accuracy and reproducibility
+- Perfect for high-throughput laboratory environments
+- GPU-accelerated for optimal performance
+
+---
+
 ABLA (Automated Bacterial Labeling Annotations)
 =======================================
 
