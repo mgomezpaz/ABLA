@@ -34,7 +34,6 @@ Note: The complete installation and environment setup process takes approximatel
 - Python >= 3.10
 - CUDA toolkit (recommended for GPU support)
 - Git
-- Wget
 - Conda package manager
 
 Installation
@@ -47,87 +46,58 @@ git clone https://github.com/matiasgp/ABLA.git
 cd ABLA
 ```
 
-2. Run the setup script:
+2. Create and activate the conda environment:
 ```bash
-chmod +x setup_environment.sh
-./setup_environment.sh
+# Create the environment from environment.yml
+conda env create -f environment.yml
+
+# Activate the environment
+conda activate abla_env
 ```
 
-The script will:
-1. Check for required tools (conda, git, wget)
-2. Verify CUDA availability
-3. Ask for your preferred environment name (default: abla_env)
-4. Offer to install mamba for faster package installation (recommended)
-5. Create a new conda environment with all dependencies
-6. Install SAM2 from the official repository
-7. Download required SAM2 checkpoints
-8. Verify PyTorch installation and CUDA availability
-
-After installation, install SAM2:
+3. Install SAM2:
 ```bash
-# Activate your environment
-conda activate your_env_name
+# Create SAM2 directory
+mkdir -p analyzer/sam2
 
-# Install SAM2
-pip install sam2
+# Clone and install SAM2
+git clone https://github.com/facebookresearch/sam2.git analyzer/sam2
+cd analyzer/sam2
+pip install -e .
+cd ../..
+
+# Download SAM2 checkpoints
+cd analyzer/sam2/checkpoints
+chmod +x download_ckpts.sh
+./download_ckpts.sh
+cd ../../..
 ```
 
-Dependencies
------------
-The installation will handle all required dependencies:
-- Python 3.10
-- PyTorch >= 2.3.1
-- TorchVision >= 0.18.1
-- CUDA Toolkit 11.8
-- NumPy
-- OpenCV
-- Scikit-learn
-- Pandas
-- Matplotlib
-- SciPy
-- PSUtil
-- Hydra
-- MRCFile
-- ONNXRuntime
-- Other required Python packages
+4. Verify the installation:
+```python
+python -c "import torch; print('PyTorch version:', torch.__version__); print('CUDA available:', torch.cuda.is_available())"
+```
 
-GPU Support
-----------
-- CUDA toolkit 11.8 is included in the installation
-- The setup script will automatically detect CUDA availability
-- PyTorch will be installed with CUDA support if available
-
-Windows Users
-------------
-It's recommended to use Windows Subsystem for Linux (WSL):
-1. Install WSL2 from Microsoft Store
-2. Install Ubuntu distribution
-3. Follow the Linux installation steps within WSL
+Note: The complete installation process should take approximately 15-20 minutes.
 
 Troubleshooting
 --------------
-1. If the environment creation times out (30 minutes):
+1. If you encounter conda environment creation issues:
    ```bash
    conda clean -a
    ```
-   Then try the installation again
+   Then try creating the environment again.
 
-2. If you want to install mamba later:
+2. For faster package installation, consider using mamba:
    ```bash
    conda install mamba -n base -c conda-forge
+   mamba env create -f environment.yml
    ```
 
-3. To verify the installation:
-   ```python
-   import torch
-   print('PyTorch version:', torch.__version__)
-   print('CUDA available:', torch.cuda.is_available())
-   ```
-
-4. If SAM2 installation fails:
-   - Check the analyzer/sam2 directory exists
+3. If SAM2 installation fails:
+   - Check if the analyzer/sam2 directory exists
    - Verify git clone of SAM2 repository succeeded
-   - Check SAM2 checkpoints were downloaded correctly
+   - Ensure SAM2 checkpoints were downloaded correctly
 
 Verification
 -----------
